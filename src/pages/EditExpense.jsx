@@ -1,63 +1,72 @@
-import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import API from "../api";
+// client/src/pages/EditExpense.jsx
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
 
 const EditExpense = () => {
-  const { state } = useLocation();
+  const { id } = useParams();
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("Food");
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
-  const [formData, setFormData] = useState({
-    title: state.title,
-    amount: state.amount,
-    category: state.category,
-    date: new Date(state.date).toISOString().split("T")[0],
-  });
+  useEffect(() => {
+    const fetchExpense = async () => {
+      const res = await axios.get(
+        `${process.env.REACT_APP_API_URL}/expenses/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const { title, amount, category } = res.data;
+      setTitle(title);
+      setAmount(amount);
+      setCategory(category);
+    };
+    fetchExpense();
+  }, [id]);
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleSubmit = async (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    try {
-      await API.put(`/expenses/${state._id}`, formData);
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Failed to update expense:", err);
-    }
+    await axios.put(
+      `${process.env.REACT_APP_API_URL}/expenses/${id}`,
+      { title, amount, category },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    navigate("/dashboard");
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <h2 className="text-2xl font-bold mb-4">Edit Expense</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <form
+        onSubmit={handleUpdate}
+        className="bg-white p-6 rounded shadow-md w-full max-w-md"
+      >
+        <h2 className="text-2xl font-bold mb-4">Edit Expense</h2>
         <input
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
+          type="text"
+          placeholder="Title"
+          className="w-full mb-3 p-2 border rounded"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
         />
         <input
-          name="amount"
           type="number"
-          value={formData.amount}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
+          placeholder="Amount"
+          className="w-full mb-3 p-2 border rounded"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
         />
-        <input
-          name="category"
-          value={formData.category}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-        />
-        <input
-          name="date"
-          type="date"
-          value={formData.date}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-        />
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+        <select
+          className="w-full mb-3 p-2 border rounded"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          <option>Food</option>
+          <option>Travel</option>
+          <option>Shopping</option>
+          <option>Other</option>
+        </select>
+        <button className="w-full bg-yellow-500 text-white py-2 rounded hover:bg-yellow-600">
           Update Expense
         </button>
       </form>

@@ -4,7 +4,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AddExpense from "./pages/AddExpense";
-import "./App.css";
+import EditExpense from "./pages/EditExpense";
+import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
   return (
@@ -12,8 +13,30 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/add-expense" element={<AddExpense />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/add-expense"
+          element={
+            <PrivateRoute>
+              <AddExpense />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/edit-expense/:id"
+          element={
+            <PrivateRoute>
+              <EditExpense />
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </Router>
   );

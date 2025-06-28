@@ -1,48 +1,49 @@
 // client/src/pages/Dashboard.jsx
-
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import Chart from "chart.js/auto";
-import "../styles/Dashboard.css";
+import { useNavigate, Link } from "react-router-dom";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+} from "chart.js";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title);
 
 const Dashboard = () => {
-  const [user, setUser] = useState(null);
-  const [expenses, setExpenses] = useState([]);
-  const [chart, setChart] = useState(null);
   const navigate = useNavigate();
+  const [expenses, setExpenses] = useState([]);
+  const [user, setUser] = useState({});
+
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    if (!token) return navigate("/");
+    fetchUser();
+    fetchExpenses();
+  }, []);
 
   const fetchUser = async () => {
     try {
-      const token = localStorage.getItem("token");
       const res = await axios.get(
         `${process.env.REACT_APP_API_URL}/auth/profile`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setUser(res.data);
+      setUser(res.data.user);
     } catch (err) {
       console.error("Failed to fetch user", err);
-      navigate("/");
     }
   };
 
   const fetchExpenses = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_URL}/expenses`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/expenses`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setExpenses(res.data);
-      renderChart(res.data);
     } catch (err) {
       console.error("Failed to fetch expenses", err);
     }
@@ -50,98 +51,96 @@ const Dashboard = () => {
 
   const handleDelete = async (id) => {
     try {
-      const token = localStorage.getItem("token");
-      await axios.delete(
-        `${process.env.REACT_APP_API_URL}/expenses/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.delete(`${process.env.REACT_APP_API_URL}/expenses/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       fetchExpenses();
     } catch (err) {
-      console.error("Failed to delete expense", err);
+      console.error("Delete failed", err);
     }
   };
 
-  const handleEdit = (expense) => {
-    localStorage.setItem("editExpense", JSON.stringify(expense));
-    navigate("/add-expense");
-  };
-
-  const renderChart = (data) => {
-    const categoryMap = {};
-
-    data.forEach((expense) => {
-      if (categoryMap[expense.category]) {
-        categoryMap[expense.category] += expense.amount;
-      } else {
-        categoryMap[expense.category] = expense.amount;
-      }
-    });
-
-    const labels = Object.keys(categoryMap);
-    const amounts = Object.values(categoryMap);
-
-    if (chart) {
-      chart.destroy();
-    }
-
-    const newChart = new Chart(document.getElementById("expenseChart"), {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [
-          {
-            label: "Expenses by Category",
-            data: amounts,
-            backgroundColor: "rgba(54, 162, 235, 0.5)",
-            borderColor: "rgba(54, 162, 235, 1)",
-            borderWidth: 1,
-          },
-        ],
+  const chartData = {
+    labels: expenses.map((exp) => exp.title),
+    datasets: [
+      {
+        label: "Amount",
+        data: expenses.map((exp) => exp.amount),
+        backgroundColor: "#3b82f6",
       },
-    });
-
-    setChart(newChart);
+    ],
   };
-
-  useEffect(() => {
-    fetchUser();
-    fetchExpenses();
-  }, []);
 
   return (
-    <div className="dashboard-container">
-      <h2>Welcome, {user?.name}</h2>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">
+            Welcome, {user?.name || "User"}
+          </h1>
+          <button
+            onClick={() => {
+              localStorage.removeItem("token");
+              navigate("/");
+            }}
+            className="bg-red-500 text-white px-4 py-2 rounded"
+          >
+            Logout
+          </button>
+        </div>
 
-      <button className="add-expense-button" onClick={() => navigate("/add-expense")}>
-        ➕ Add Expense
-      </button>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Your Expenses</h2>
+          <Link
+            to="/add-expense"
+            className="bg-green-500 text-white px-4 py-2 rounded"
+          >
+            + Add Expense
+          </Link>
+        </div>
 
-      <h3>Your Expenses</h3>
-      {expenses.length === 0 ? (
-        <p>No expenses found.</p>
-      ) : (
-        <ul className="expense-list">
-          {expenses.map((expense) => (
-            <li key={expense._id} className="expense-item">
-              <div>
-                <strong>{expense.title}</strong> - ₹{expense.amount} | {expense.category} | {new Date(expense.date).toLocaleDateString()}
+        {expenses.length === 0 ? (
+          <p className="text-gray-500">No expenses found.</p>
+        ) : (
+          <div className="space-y-4">
+            {expenses.map((expense) => (
+              <div
+                key={expense._id}
+                className="bg-white shadow p-4 rounded flex justify-between items-center"
+              >
+                <div>
+                  <h3 className="text-lg font-medium">{expense.title}</h3>
+                  <p className="text-sm text-gray-500">
+                    ₹{expense.amount} | {expense.category}
+                  </p>
+                </div>
+                <div className="space-x-2">
+                  <Link
+                    to={`/edit-expense/${expense._id}`}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(expense._id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-              <div className="expense-actions">
-                <button onClick={() => handleEdit(expense)} className="edit-btn">✏️ Edit</button>
-                <button onClick={() => handleDelete(expense._id)} className="delete-btn">🗑️ Delete</button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+            ))}
+          </div>
+        )}
 
-      <div className="chart-container">
-        <h3>Expense Analytics</h3>
-        <canvas id="expenseChart" width="600" height="300"></canvas>
+        <div className="mt-10 bg-white p-6 rounded shadow">
+          <h3 className="text-lg font-semibold mb-4">Expense Chart</h3>
+          {expenses.length > 0 ? (
+            <Bar data={chartData} />
+          ) : (
+            <p className="text-gray-400 text-sm">No data for chart</p>
+          )}
+        </div>
       </div>
     </div>
   );
