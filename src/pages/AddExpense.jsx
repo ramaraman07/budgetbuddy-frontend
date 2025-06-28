@@ -1,42 +1,33 @@
+// client/src/pages/AddExpense.jsx
+
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const AddExpense = () => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
     date: "",
+    category: "",
   });
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-
+    const token = localStorage.getItem("token");
     try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/expenses`,
-        formData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setSuccess("Expense added successfully!");
-      setTimeout(() => navigate("/dashboard"), 1000);
+      await axios.post(`${process.env.REACT_APP_API_URL}/expenses`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      navigate("/dashboard");
     } catch (err) {
-      console.error("Failed to add expense", err);
+      console.error(err);
       setError("Something went wrong. Please try again.");
     }
   };
@@ -71,12 +62,19 @@ const AddExpense = () => {
           required
           style={styles.input}
         />
-        <button type="submit" style={styles.button}>
-          Save Expense
-        </button>
+        <input
+          type="text"
+          name="category"
+          placeholder="Category (e.g. Food, Travel)"
+          value={formData.category}
+          onChange={handleChange}
+          required
+          style={styles.input}
+        />
 
-        {success && <p style={styles.success}>{success}</p>}
         {error && <p style={styles.error}>{error}</p>}
+
+        <button type="submit" style={styles.button}>Save Expense</button>
       </form>
     </div>
   );
@@ -84,18 +82,19 @@ const AddExpense = () => {
 
 const styles = {
   container: {
-    padding: "40px",
     maxWidth: "500px",
-    margin: "auto",
-    fontFamily: "Arial, sans-serif",
-    backgroundColor: "#f9f9f9",
+    margin: "60px auto",
+    padding: "30px",
+    border: "1px solid #ddd",
     borderRadius: "10px",
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-    marginTop: "50px",
+    backgroundColor: "#fafafa",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+    fontFamily: "Segoe UI, sans-serif",
   },
   heading: {
     textAlign: "center",
-    marginBottom: "30px",
+    fontSize: "26px",
+    marginBottom: "20px",
     color: "#333",
   },
   form: {
@@ -105,28 +104,23 @@ const styles = {
   },
   input: {
     padding: "12px",
-    border: "1px solid #ccc",
-    borderRadius: "5px",
     fontSize: "16px",
+    border: "1px solid #ccc",
+    borderRadius: "6px",
   },
   button: {
-    backgroundColor: "#4CAF50",
-    color: "#fff",
     padding: "12px",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
+    backgroundColor: "#28a745",
+    color: "#fff",
     fontSize: "16px",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
   },
   error: {
     color: "red",
+    fontSize: "14px",
     textAlign: "center",
-    marginTop: "10px",
-  },
-  success: {
-    color: "green",
-    textAlign: "center",
-    marginTop: "10px",
   },
 };
 
