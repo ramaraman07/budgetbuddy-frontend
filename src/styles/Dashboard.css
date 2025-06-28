@@ -1,0 +1,61 @@
+/* Dashboard.css */
+
+.dashboard-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 30px;
+  background-color: #f9fbfd;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.add-expense-button {
+  padding: 10px 20px;
+  margin-bottom: 20px;
+  background-color: #3f51b5;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.expense-list {
+  list-style: none;
+  padding: 0;
+}
+
+.expense-item {
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 5px;
+  padding: 12px 20px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.expense-actions button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+}
+
+.edit-btn {
+  background-color: #ffd54f;
+  color: black;
+}
+
+.delete-btn {
+  background-color: #ef5350;
+  color: white;
+}
+
+.chart-container {
+  margin-top: 40px;
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
