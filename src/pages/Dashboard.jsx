@@ -1,102 +1,82 @@
+// client/src/pages/Dashboard.jsx
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [expenses, setExpenses] = useState([]);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchExpenses = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_URL}/expenses`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setExpenses(res.data);
-    } catch (error) {
-      console.error("Failed to fetch expenses", error);
-    }
-  };
+  const [expenses, setExpenses] = useState([]);
+  const [error, setError] = useState("");
 
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_URL}/auth/profile`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setUser(res.data);
-    } catch (error) {
-      console.error("Failed to fetch user", error);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch user", err);
+      navigate("/");
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
+  const fetchExpenses = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/expenses`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setExpenses(res.data);
+    } catch (err) {
+      console.error("Failed to fetch expenses", err);
+      setError("Something went wrong while fetching expenses.");
+    }
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/");
-    } else {
-      fetchUser();
-      fetchExpenses();
-    }
+    fetchUser();
+    fetchExpenses();
   }, []);
 
   return (
-    <div style={styles.container}>
+    <div style={styles.wrapper}>
       <div style={styles.header}>
-        <h2>Welcome, {user?.name}</h2>
-        <button onClick={handleLogout} style={styles.logoutBtn}>
-          Logout
-        </button>
+        <h2 style={styles.title}>Welcome, {user?.name || "User"} 🎉</h2>
+        <Link to="/add-expense" style={styles.addButton}>+ Add Expense</Link>
       </div>
 
-      <h3>Your Expenses</h3>
-      <button onClick={() => navigate("/add-expense")} style={styles.addBtn}>
-        ➕ Add Expense
-      </button>
+      <div style={styles.content}>
+        <h3 style={styles.subtitle}>Your Expenses</h3>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : expenses.length === 0 ? (
-        <p style={styles.noExpenses}>No expenses found.</p>
-      ) : (
-        <div style={styles.expenseList}>
-          {expenses.map((expense) => (
-            <div key={expense._id} style={styles.expenseItem}>
-              <p>
-                <strong>{expense.title}</strong> - ₹{expense.amount}
-              </p>
-              <p style={styles.date}>
-                {new Date(expense.date).toLocaleDateString()}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+        {error && <p style={styles.error}>{error}</p>}
+        {expenses.length === 0 ? (
+          <p style={styles.noData}>No expenses found.</p>
+        ) : (
+          <div style={styles.grid}>
+            {expenses.map((expense) => (
+              <div key={expense._id} style={styles.card}>
+                <h4 style={styles.cardTitle}>{expense.title}</h4>
+                <p style={styles.cardAmount}>₹{expense.amount}</p>
+                <p style={styles.cardDate}>{new Date(expense.date).toLocaleDateString()}</p>
+                <p style={styles.cardCategory}>Category: {expense.category}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 const styles = {
-  container: {
+  wrapper: {
     padding: "30px",
-    fontFamily: "Arial, sans-serif",
-    backgroundColor: "#f4f4f4",
-    minHeight: "100vh",
+    maxWidth: "1000px",
+    margin: "0 auto",
+    fontFamily: "Segoe UI, sans-serif",
   },
   header: {
     display: "flex",
@@ -104,42 +84,68 @@ const styles = {
     alignItems: "center",
     marginBottom: "30px",
   },
-  logoutBtn: {
-    backgroundColor: "#ff4d4f",
+  title: {
+    fontSize: "28px",
+    color: "#333",
+  },
+  addButton: {
+    backgroundColor: "#28a745",
     color: "#fff",
-    border: "none",
-    padding: "8px 16px",
-    cursor: "pointer",
+    padding: "10px 18px",
+    textDecoration: "none",
     borderRadius: "5px",
+    fontSize: "16px",
   },
-  addBtn: {
-    marginBottom: "20px",
-    padding: "10px 20px",
-    backgroundColor: "#4CAF50",
-    color: "#fff",
-    border: "none",
-    cursor: "pointer",
-    borderRadius: "5px",
-  },
-  expenseList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px",
-  },
-  expenseItem: {
-    backgroundColor: "#fff",
-    padding: "15px",
+  content: {
+    backgroundColor: "#f9f9f9",
+    padding: "20px",
     borderRadius: "8px",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
   },
-  date: {
-    color: "#888",
-    fontSize: "14px",
-  },
-  noExpenses: {
+  subtitle: {
+    fontSize: "22px",
+    marginBottom: "20px",
     color: "#555",
-    fontStyle: "italic",
-    marginTop: "20px",
+  },
+  error: {
+    color: "red",
+    marginBottom: "10px",
+  },
+  noData: {
+    fontSize: "18px",
+    color: "#888",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "20px",
+  },
+  card: {
+    backgroundColor: "#fff",
+    border: "1px solid #ddd",
+    borderRadius: "8px",
+    padding: "16px",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+  },
+  cardTitle: {
+    fontSize: "18px",
+    marginBottom: "8px",
+    fontWeight: "600",
+    color: "#222",
+  },
+  cardAmount: {
+    fontSize: "16px",
+    color: "#007bff",
+    marginBottom: "6px",
+  },
+  cardDate: {
+    fontSize: "14px",
+    color: "#555",
+    marginBottom: "4px",
+  },
+  cardCategory: {
+    fontSize: "14px",
+    color: "#666",
   },
 };
 
