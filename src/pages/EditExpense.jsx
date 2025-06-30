@@ -1,72 +1,121 @@
-// client/src/pages/EditExpense.jsx
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const EditExpense = () => {
   const { id } = useParams();
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("Food");
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const [formData, setFormData] = useState({
+    title: '',
+    amount: '',
+    category: '',
+    date: '',
+  });
+  const [message, setMessage] = useState('');
+
+  const fetchExpense = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`https://budgetbuddy-backend-1-uut1.onrender.com/api/expenses/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const { title, amount, category, date } = res.data;
+      setFormData({
+        title,
+        amount,
+        category,
+        date: date.split('T')[0], // Format for input type="date"
+      });
+    } catch (error) {
+      setMessage('Failed to fetch expense data.');
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
-    const fetchExpense = async () => {
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_URL}/expenses/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const { title, amount, category } = res.data;
-      setTitle(title);
-      setAmount(amount);
-      setCategory(category);
-    };
     fetchExpense();
   }, [id]);
 
-  const handleUpdate = async (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    await axios.put(
-      `${process.env.REACT_APP_API_URL}/expenses/${id}`,
-      { title, amount, category },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    navigate("/dashboard");
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`https://budgetbuddy-backend-1-uut1.onrender.com/api/expenses/${id}`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMessage('Expense updated successfully!');
+      setTimeout(() => navigate('/dashboard'), 1500);
+    } catch (error) {
+      setMessage('Failed to update expense.');
+      console.error(error);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
       <form
-        onSubmit={handleUpdate}
-        className="bg-white p-6 rounded shadow-md w-full max-w-md"
+        onSubmit={handleSubmit}
+        className="w-full max-w-md bg-white p-6 rounded-xl shadow-lg space-y-4"
       >
-        <h2 className="text-2xl font-bold mb-4">Edit Expense</h2>
+        <h2 className="text-2xl font-bold text-center text-gray-800">Edit Expense</h2>
+
+        {message && (
+          <div className="text-center text-sm text-blue-600 font-medium">{message}</div>
+        )}
+
         <input
           type="text"
+          name="title"
           placeholder="Title"
-          className="w-full mb-3 p-2 border rounded"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          value={formData.title}
+          onChange={handleChange}
+          required
+          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
+
         <input
           type="number"
+          name="amount"
           placeholder="Amount"
-          className="w-full mb-3 p-2 border rounded"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          value={formData.amount}
+          onChange={handleChange}
+          required
+          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
+
         <select
-          className="w-full mb-3 p-2 border rounded"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          name="category"
+          value={formData.category}
+          onChange={handleChange}
+          required
+          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
-          <option>Food</option>
-          <option>Travel</option>
-          <option>Shopping</option>
-          <option>Other</option>
+          <option value="">Select Category</option>
+          <option value="Food">Food</option>
+          <option value="Travel">Travel</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Bills">Bills</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Others">Others</option>
         </select>
-        <button className="w-full bg-yellow-500 text-white py-2 rounded hover:bg-yellow-600">
+
+        <input
+          type="date"
+          name="date"
+          value={formData.date}
+          onChange={handleChange}
+          required
+          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+
+        <button
+          type="submit"
+          className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
+        >
           Update Expense
         </button>
       </form>

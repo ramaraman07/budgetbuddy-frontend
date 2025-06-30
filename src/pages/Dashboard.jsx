@@ -1,146 +1,148 @@
-// client/src/pages/Dashboard.jsx
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
-import { Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-} from "chart.js";
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title);
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Bar, Pie } from 'react-chartjs-2';
+import 'chart.js/auto';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [expenses, setExpenses] = useState([]);
-  const [user, setUser] = useState({});
-
-  const token = localStorage.getItem("token");
-
-  useEffect(() => {
-    if (!token) return navigate("/");
-    fetchUser();
-    fetchExpenses();
-  }, []);
-
-  const fetchUser = async () => {
-    try {
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_URL}/auth/profile`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setUser(res.data.user);
-    } catch (err) {
-      console.error("Failed to fetch user", err);
-    }
-  };
+  const [user, setUser] = useState(null);
 
   const fetchExpenses = async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/expenses`, {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('https://budgetbuddy-backend-1-uut1.onrender.com/api/expenses', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setExpenses(res.data);
-    } catch (err) {
-      console.error("Failed to fetch expenses", err);
+    } catch (error) {
+      console.error('Failed to fetch expenses', error);
+    }
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('https://budgetbuddy-backend-1-uut1.onrender.com/api/auth/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser(res.data);
+    } catch (error) {
+      console.error('Failed to fetch user profile', error);
     }
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this expense?")) return;
     try {
-      await axios.delete(`${process.env.REACT_APP_API_URL}/expenses/${id}`, {
+      const token = localStorage.getItem('token');
+      await axios.delete(`https://budgetbuddy-backend-1-uut1.onrender.com/api/expenses/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchExpenses();
-    } catch (err) {
-      console.error("Delete failed", err);
+    } catch (error) {
+      console.error('Failed to delete expense', error);
     }
   };
 
+  useEffect(() => {
+    fetchProfile();
+    fetchExpenses();
+  }, []);
+
+  const totalExpense = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+
   const chartData = {
-    labels: expenses.map((exp) => exp.title),
+    labels: expenses.map((exp) => exp.category),
     datasets: [
       {
-        label: "Amount",
+        label: 'Expenses by Category',
         data: expenses.map((exp) => exp.amount),
-        backgroundColor: "#3b82f6",
+        backgroundColor: [
+          '#60a5fa', '#f87171', '#34d399', '#fbbf24', '#c084fc',
+          '#fb7185', '#4ade80', '#38bdf8', '#facc15',
+        ],
       },
     ],
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">
-            Welcome, {user?.name || "User"}
+          <h1 className="text-2xl font-bold text-gray-800">
+            Welcome, {user?.name || 'User'} 👋
           </h1>
           <button
-            onClick={() => {
-              localStorage.removeItem("token");
-              navigate("/");
-            }}
-            className="bg-red-500 text-white px-4 py-2 rounded"
+            onClick={() => navigate('/add')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
           >
-            Logout
+            + Add Expense
           </button>
         </div>
 
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Your Expenses</h2>
-          <Link
-            to="/add-expense"
-            className="bg-green-500 text-white px-4 py-2 rounded"
-          >
-            + Add Expense
-          </Link>
-        </div>
-
         {expenses.length === 0 ? (
-          <p className="text-gray-500">No expenses found.</p>
-        ) : (
-          <div className="space-y-4">
-            {expenses.map((expense) => (
-              <div
-                key={expense._id}
-                className="bg-white shadow p-4 rounded flex justify-between items-center"
-              >
-                <div>
-                  <h3 className="text-lg font-medium">{expense.title}</h3>
-                  <p className="text-sm text-gray-500">
-                    ₹{expense.amount} | {expense.category}
-                  </p>
-                </div>
-                <div className="space-x-2">
-                  <Link
-                    to={`/edit-expense/${expense._id}`}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded"
-                  >
-                    Edit
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(expense._id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="text-center mt-20 text-gray-500">
+            <p className="text-lg">No expenses found 💸</p>
+            <p className="text-sm">Start by adding your first expense</p>
           </div>
-        )}
+        ) : (
+          <>
+            <div className="overflow-x-auto bg-white rounded-xl shadow-md p-4 mb-8">
+              <h2 className="text-xl font-semibold mb-4 text-gray-700">Your Expenses</h2>
+              <table className="min-w-full text-left">
+                <thead>
+                  <tr className="border-b text-gray-600">
+                    <th className="py-2 px-4">Title</th>
+                    <th className="py-2 px-4">Amount (₹)</th>
+                    <th className="py-2 px-4">Category</th>
+                    <th className="py-2 px-4">Date</th>
+                    <th className="py-2 px-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenses.map((exp) => (
+                    <tr key={exp._id} className="border-b hover:bg-gray-50">
+                      <td className="py-2 px-4">{exp.title}</td>
+                      <td className="py-2 px-4">₹{exp.amount}</td>
+                      <td className="py-2 px-4">{exp.category}</td>
+                      <td className="py-2 px-4">{new Date(exp.date).toLocaleDateString()}</td>
+                      <td className="py-2 px-4 flex gap-2 justify-center">
+                        <button
+                          onClick={() => navigate(`/edit/${exp._id}`)}
+                          className="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(exp._id)}
+                          className="text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="mt-4 text-right text-gray-700 font-medium">
+                Total Spent: ₹{totalExpense}
+              </div>
+            </div>
 
-        <div className="mt-10 bg-white p-6 rounded shadow">
-          <h3 className="text-lg font-semibold mb-4">Expense Chart</h3>
-          {expenses.length > 0 ? (
-            <Bar data={chartData} />
-          ) : (
-            <p className="text-gray-400 text-sm">No data for chart</p>
-          )}
-        </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white p-4 rounded-xl shadow-md">
+                <h3 className="text-lg font-semibold mb-2 text-gray-700">Bar Chart</h3>
+                <Bar data={chartData} />
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-md">
+                <h3 className="text-lg font-semibold mb-2 text-gray-700">Pie Chart</h3>
+                <Pie data={chartData} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

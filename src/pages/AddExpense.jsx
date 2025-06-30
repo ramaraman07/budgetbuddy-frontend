@@ -1,92 +1,119 @@
-// client/src/pages/AddExpense.jsx
-import React, { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const AddExpense = () => {
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
-  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    title: '',
+    amount: '',
+    category: '',
+    date: '',
+  });
+  const [message, setMessage] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    const token = localStorage.getItem("token");
-
-    try {
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/expenses`,
-        { title, amount, category },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Failed to add expense", err);
-      setError("Something went wrong. Please try again.");
-    }
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      setMessage('⚠️ No token found. Please log in again.');
+      return;
+    }
+
+    const payload = {
+      title: formData.title,
+      amount: Number(formData.amount), // ✅ ensure it's a number
+      category: formData.category,
+      date: formData.date,
+    };
+
+    await axios.post(
+      'https://budgetbuddy-backend-1-uut1.onrender.com/api/expenses',
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    setMessage('✅ Expense added successfully!');
+    setTimeout(() => navigate('/dashboard'), 1500);
+  } catch (error) {
+    console.error('❌ Failed to add expense:', error.response?.data || error.message);
+    setMessage('❌ Failed to add expense. Please try again.');
+  }
+};
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
       <form
         onSubmit={handleSubmit}
-        className="bg-white shadow-lg rounded px-8 pt-6 pb-8 w-full max-w-md"
+        className="w-full max-w-md bg-white p-6 rounded-xl shadow-lg space-y-4"
       >
-        <h2 className="text-2xl font-bold mb-6 text-center">Add Expense</h2>
+        <h2 className="text-2xl font-bold text-center text-gray-800">Add New Expense</h2>
 
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        {message && (
+          <div className="text-center text-sm text-blue-600 font-medium">{message}</div>
+        )}
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">
-            Title
-          </label>
-          <input
-            type="text"
-            className="mt-1 block w-full px-3 py-2 border rounded shadow"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-        </div>
+        <input
+          type="text"
+          name="title"
+          placeholder="Title"
+          value={formData.title}
+          onChange={handleChange}
+          required
+          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">
-            Amount
-          </label>
-          <input
-            type="number"
-            className="mt-1 block w-full px-3 py-2 border rounded shadow"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
-        </div>
+        <input
+          type="number"
+          name="amount"
+          placeholder="Amount"
+          value={formData.amount}
+          onChange={handleChange}
+          required
+          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700">
-            Category
-          </label>
-          <input
-            type="text"
-            className="mt-1 block w-full px-3 py-2 border rounded shadow"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            required
-          />
-        </div>
+        <select
+          name="category"
+          value={formData.category}
+          onChange={handleChange}
+          required
+          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          <option value="">Select Category</option>
+          <option value="Food">Food</option>
+          <option value="Travel">Travel</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Bills">Bills</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Others">Others</option>
+        </select>
+
+        <input
+          type="date"
+          name="date"
+          value={formData.date}
+          onChange={handleChange}
+          required
+          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
 
         <button
           type="submit"
-          className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
+          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
         >
-          Save Expense
+          Add Expense
         </button>
       </form>
     </div>
