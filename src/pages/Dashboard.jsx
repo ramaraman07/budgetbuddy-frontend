@@ -54,7 +54,7 @@ const Dashboard = () => {
   const totalExpense = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
   const chartData = {
-    labels: expenses.map((exp) => exp.category),
+    labels: expenses.map((exp) => exp.category || 'Other'),
     datasets: [
       {
         label: 'Expenses by Category',
@@ -106,8 +106,14 @@ const Dashboard = () => {
                     <tr key={exp._id} className="border-b hover:bg-gray-50">
                       <td className="py-2 px-4">{exp.title}</td>
                       <td className="py-2 px-4">₹{exp.amount}</td>
-                      <td className="py-2 px-4">{exp.category}</td>
-                      <td className="py-2 px-4">{new Date(exp.date).toLocaleDateString()}</td>
+                      <td className="py-2 px-4">{exp.category || "Uncategorized"}</td>
+                      <td className="py-2 px-4">
+                        {exp.date ? new Date(exp.date).toLocaleDateString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        }) : "No Date"}
+                      </td>
                       <td className="py-2 px-4 flex gap-2 justify-center">
                         <button
                           onClick={() => navigate(`/edit/${exp._id}`)}

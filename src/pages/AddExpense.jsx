@@ -16,41 +16,48 @@ const AddExpense = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const token = localStorage.getItem('token');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    if (!token) {
-      setMessage('⚠️ No token found. Please log in again.');
+    const { title, amount, category, date } = formData;
+
+    if (!title || !amount || !category || !date) {
+      setMessage('⚠️ Please fill in all fields.');
       return;
     }
 
-    const payload = {
-      title: formData.title,
-      amount: Number(formData.amount), // ✅ ensure it's a number
-      category: formData.category,
-      date: formData.date,
-    };
-
-    await axios.post(
-      'https://budgetbuddy-backend-1-uut1.onrender.com/api/expenses',
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setMessage('⚠️ No token found. Please log in again.');
+        return;
       }
-    );
 
-    setMessage('✅ Expense added successfully!');
-    setTimeout(() => navigate('/dashboard'), 1500);
-  } catch (error) {
-    console.error('❌ Failed to add expense:', error.response?.data || error.message);
-    setMessage('❌ Failed to add expense. Please try again.');
-  }
-};
+      const payload = {
+        title,
+        amount: Number(amount),
+        category,
+        date,
+      };
+
+      await axios.post(
+        'https://budgetbuddy-backend-1-uut1.onrender.com/api/expenses',
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      setMessage('✅ Expense added successfully!');
+      setTimeout(() => navigate('/dashboard'), 1500);
+    } catch (error) {
+      console.error('❌ Failed to add expense:', error.response?.data || error.message);
+      setMessage('❌ Failed to add expense. Please try again.');
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
